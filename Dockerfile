@@ -26,7 +26,7 @@ RUN mise install rust@latest && \
 # Rust dev tools
 RUN . ~/.profile && \
     rustup component add clippy rustfmt && \
-    cargo install cargo-nextest cargo-watch
+    cargo install --locked cargo-nextest cargo-watch
 
 # Node.js for tooling
 RUN mise install node@lts && \
