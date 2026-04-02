@@ -1,0 +1,11 @@
+dockerfile = "Dockerfile"
+
+[identity]
+name = "The Architect"
+
+[claude]
+plugins = [
+  "code-review@claude-plugins-official",
+  "feature-dev@claude-plugins-official",
+  "commit-commands@claude-plugins-official",
+]
