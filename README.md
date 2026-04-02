@@ -1,0 +1,26 @@
+# agent-architect
+
+`agent-architect` is the jackin agent for developing [jackin](https://github.com/donbeave/jackin) itself.
+
+> "I am the Architect. I created the Matrix."
+
+It provides the Rust development environment needed to build and test the jackin CLI.
+
+## Usage
+
+```sh
+jackin load agent-architect
+```
+
+## Contract
+
+- Final Dockerfile stage must literally be `FROM donbeave/jackin-construct:trixie`
+- Plugins are declared in `jackin.agent.toml`
+
+## Environment
+
+- **Rust** (latest stable via mise)
+- **Node.js** LTS (via mise)
+- System build tools (`build-essential`, `libssl-dev`, `pkg-config`)
+
+Shared shell/runtime tools come from `jackin-construct:trixie`.
