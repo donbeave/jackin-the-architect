@@ -1,6 +1,6 @@
-# agent-architect
+# the-architect
 
-`agent-architect` is the jackin agent for developing [jackin](https://github.com/donbeave/jackin) itself.
+`the-architect` is the jackin agent for developing [jackin](https://github.com/donbeave/jackin) itself.
 
 > "I am the Architect. I created the Matrix."
 
@@ -9,7 +9,7 @@ It provides the Rust development environment needed to build and test the jackin
 ## Usage
 
 ```sh
-jackin load agent-architect
+jackin load the-architect
 ```
 
 ## Contract
@@ -19,8 +19,10 @@ jackin load agent-architect
 
 ## Environment
 
-- **Rust** (latest stable via mise)
+- **Rust** (latest stable via mise) with clippy and rustfmt
+- **cargo-nextest** — fast test runner
+- **cargo-watch** — file watcher for continuous builds/tests
 - **Node.js** LTS (via mise)
-- System build tools (`build-essential`, `libssl-dev`, `pkg-config`)
+- System build tools (`build-essential`, `libssl-dev`, `pkg-config`, `cmake`)
 
 Shared shell/runtime tools come from `jackin-construct:trixie`.
