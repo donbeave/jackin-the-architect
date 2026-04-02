@@ -8,7 +8,8 @@ RUN sudo apt-get update && \
     build-essential \
     libssl-dev \
     openssl \
-    pkg-config && \
+    pkg-config \
+    cmake && \
     sudo apt-get autoremove -y && \
     sudo rm -rf /var/lib/apt/* \
                /var/cache/apt/* \
@@ -21,6 +22,11 @@ ENV MISE_TRUSTED_CONFIG_PATHS=/workspace
 # Rust toolchain
 RUN mise install rust@latest && \
     mise use -g --pin rust@latest
+
+# Rust dev tools
+RUN . ~/.profile && \
+    rustup component add clippy rustfmt && \
+    cargo install cargo-nextest cargo-watch
 
 # Node.js for tooling
 RUN mise install node@lts && \
