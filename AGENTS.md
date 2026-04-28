@@ -1,6 +1,6 @@
 # AGENTS.md — jackin-the-architect
 
-A privileged Claude Code agent image. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, and ~18 Claude Code plugins including `superpowers`, `plugin-dev`, and `hookify`. Named `the-architect` because it has the broadest operator capability of the agent images — it can manage the entire `jackin-project` repo collection.
+A privileged Claude Code agent image. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, and ~19 Claude Code plugins including `superpowers`, `plugin-dev`, and `hookify`. Named `the-architect` because it has the broadest operator capability of the agent images — it can manage the entire `jackin-project` repo collection.
 
 **Image distribution is public.** Because of the plugin count and the presence of OpenTofu (which can manage org-write credentials at runtime), this image has a larger blast radius than the sibling `jackin-agent-smith`. Treat it with proportionally more care.
 
@@ -8,7 +8,7 @@ A privileged Claude Code agent image. Extends `projectjackin/construct:trixie` a
 
 Same base concerns as `jackin-agent-smith` (base image, mise pulls, runtime credentials, layer secrets, plugin trust), plus:
 
-1. **Plugin breadth.** 18 plugins, each with its own update cadence, means a compromised plugin in any of them runs with the agent's full capability. `plugin-dev` and `hookify` in particular can generate code that auto-executes via hooks.
+1. **Plugin breadth.** 19 plugins, each with its own update cadence, means a compromised plugin in any of them runs with the agent's full capability. `plugin-dev` and `hookify` in particular can generate code that auto-executes via hooks.
 2. **OpenTofu credential adjacency.** An operator running this image against `jackin-github-terraform` exports `GITHUB_TOKEN` with org-admin scope into the shell. Anything the agent does (any plugin, any skill) can see that token via `/proc/*/environ`.
 3. **Rust `cargo install`.** `cargo install --locked cargo-nextest cargo-watch` pulls from crates.io at build time. Lock file pins transitive deps, but root crates are unpinned — a malicious version of `cargo-watch` on crates.io lands in a future image rebuild.
 4. **Wider tool surface for supply-chain.** Rust + Node + OpenTofu + mise = four separate package ecosystems, each with its own registry trust.
