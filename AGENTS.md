@@ -35,9 +35,9 @@ if git diff --cached --name-only | grep -qx Dockerfile; then
     && { echo "UN-LOCKED cargo install in Dockerfile"; exit 1; } || true
 fi
 
-# 3. jackin.agent.toml plugin-source audit
-if git diff --cached --name-only | grep -qx jackin.agent.toml; then
-  grep -E '"[^@]+@[^"]+"' jackin.agent.toml | grep -Ev '@(claude-plugins-official|jackin-marketplace)' \
+# 3. jackin.role.toml plugin-source audit
+if git diff --cached --name-only | grep -qx jackin.role.toml; then
+  grep -E '"[^@]+@[^"]+"' jackin.role.toml | grep -Ev '@(claude-plugins-official|jackin-marketplace)' \
     && echo "NOTE: plugin from non-default marketplace — document trust rationale in PR body" || true
 fi
 
