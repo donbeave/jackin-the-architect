@@ -10,6 +10,12 @@ It provides the Rust development environment needed to build and test the jackin
 jackin load the-architect
 ```
 
+To run with Codex instead of Claude:
+
+```sh
+jackin load the-architect --agent codex
+```
+
 ## Contract
 
 - Final Dockerfile stage must literally be `FROM projectjackin/construct:trixie`
