@@ -28,7 +28,7 @@ RUN sudo apt-get update && \
                /var/cache/apt/* \
                /tmp/*
 
-USER claude
+USER agent
 
 ENV MISE_TRUSTED_CONFIG_PATHS=/workspace
 
