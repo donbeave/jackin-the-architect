@@ -1,0 +1,27 @@
+name: Publish Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'jackin.role.toml'
+      - '.github/workflows/publish-image.yml'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: docker/github-builder/.github/workflows/build.yml@5840c33ab36c6ca11100edbe78f02b178309ff4e
+    with:
+      output: image
+      push: true
+      platforms: linux/amd64,linux/arm64
+      meta-images: docker.io/projectjackin/jackin-the-architect
+      meta-tags: |
+        type=raw,value=latest
+        type=sha,prefix=
+    secrets:
+      registry-auths: |
+        - registry: https://index.docker.io/v1/
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
