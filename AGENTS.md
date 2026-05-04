@@ -1,6 +1,6 @@
 # AGENTS.md — jackin-the-architect
 
-A privileged Claude Code agent image. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, and ~20 Claude Code plugins including `superpowers`, `plugin-dev`, `hookify`, and `caveman`. Named `the-architect` because it has the broadest operator capability of the agent images — it can manage the entire `jackin-project` repo collection.
+A privileged Claude Code agent image. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, and ~20 Claude Code plugins including `plugin-dev`, `hookify`, and `caveman`. Named `the-architect` because it has the broadest operator capability of the agent images — it can manage the entire `jackin-project` repo collection.
 
 **Image distribution is public.** Because of the plugin count and the presence of OpenTofu (which can manage org-write credentials at runtime), this image has a larger blast radius than the sibling `jackin-agent-smith`. Treat it with proportionally more care.
 

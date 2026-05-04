@@ -9,7 +9,6 @@ default = "1"
 
 [claude]
 plugins = [
-  "superpowers@claude-plugins-official",
   "code-review@claude-plugins-official",
   "code-simplifier@claude-plugins-official",
   "feature-dev@claude-plugins-official",
