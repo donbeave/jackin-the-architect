@@ -1,4 +1,5 @@
 dockerfile = "Dockerfile"
+published_image = "docker.io/projectjackin/jackin-the-architect:latest"
 
 [identity]
 name = "The Architect"
