@@ -11,6 +11,9 @@ on:
 
 jobs:
   publish:
+    permissions:
+      contents: read
+      id-token: write
     uses: docker/github-builder/.github/workflows/build.yml@5840c33ab36c6ca11100edbe78f02b178309ff4e
     with:
       output: image
