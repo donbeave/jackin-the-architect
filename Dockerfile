@@ -60,16 +60,49 @@ RUN mise install "node@${NODE_VERSION}" && \
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
-# caveman installer adds the components the jackin plugin system does
-# not manage: SessionStart/UserPromptSubmit hooks, the statusline badge,
-# and the caveman-shrink MCP proxy. Codex uses the npx-skills path
-# rather than the Claude plugin marketplace, so both agents need this
-# pass. `--with-init` is intentionally omitted: that flag writes
-# per-repo IDE rule files (`.github/copilot-instructions.md`,
-# `AGENTS.md`, etc.) into `$PWD`, which at image-build time is `/` and
-# would pollute the image root with files the runtime workspace mount
-# hides anyway. `. ~/.profile` activates mise so node/npx shims resolve
-# for the codex target.
+# Caveman install for both agents this image supports (claude + codex).
+# We bypass the root caveman `install.sh` because its per-agent detection
+# probes (`command:claude`, `command:codex`) fail at image-build time —
+# both agent CLIs are injected by the jackin runtime per-container, not
+# baked into this image, so the root installer sees "nothing detected"
+# and exits 0 with no files written. Calling each component installer
+# directly skips detection and lands the files in the image layer.
+#
+# Claude side: `hooks/install.sh` writes `~/.claude/hooks/{6 files}` and
+# patches `~/.claude/settings.json` with SessionStart/UserPromptSubmit
+# hooks + the statusline badge. The `caveman@caveman` plugin itself is
+# already declared in `jackin.role.toml` and gets installed at runtime
+# by jackin's `install-claude-plugins.sh`, so we don't repeat it here.
+#
+# Codex side: caveman ships as a set of AGENTS.md-style skills, not as a
+# Claude plugin. `npx skills add … -a codex --global` writes them to
+# `~/.agents/skills/caveman*`, which is the location the codex CLI looks
+# up at runtime. `--yes` makes it non-interactive (build context has no
+# TTY); `--global` selects `~/.agents/skills/` over `$PWD/.agents/`
+# (which would be `/.agents` at build time and EACCES anyway). `cd
+# /home/agent` is defensive — `--global` honors `$HOME` regardless, but
+# any future relative-path fallback in the skills CLI lands somewhere
+# sensible instead of `/`.
+#
+# Two components from the root installer are intentionally NOT run here:
+#   * `--with-mcp-shrink` — `claude mcp add …` needs the runtime-injected
+#     claude CLI; if we want this proxy it belongs in a runtime hook.
+#   * `--with-init` — writes per-repo IDE rule files (AGENTS.md,
+#     .clinerules/, .cursorrules, .github/copilot-instructions.md) into
+#     `$PWD`. At build time `$PWD=/` so it would either EACCES or
+#     pollute the image root with files the runtime workspace mount
+#     hides anyway. Per-repo concern, not per-image.
+#
+# `test -f` / `test -d` lines fail the build if upstream changes a
+# script and it silently stops writing files — the previous breakage
+# (root installer exit 0 with empty `~/.claude/`) went undetected for a
+# full release because nothing asserted the result.
 RUN . ~/.profile && \
-    curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | \
-    bash -s -- --with-hooks --with-mcp-shrink --only claude --only codex
+    mkdir -p /home/agent/.claude /home/agent/.codex && \
+    curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/hooks/install.sh | bash && \
+    test -f /home/agent/.claude/hooks/caveman-statusline.sh && \
+    test -f /home/agent/.claude/hooks/caveman-activate.js && \
+    test -f /home/agent/.claude/hooks/caveman-mode-tracker.js && \
+    cd /home/agent && \
+    npx -y skills add JuliusBrussee/caveman -a codex --yes --global && \
+    test -d /home/agent/.agents/skills/caveman
