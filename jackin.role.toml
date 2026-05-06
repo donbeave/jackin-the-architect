@@ -34,3 +34,10 @@ source = "tailrocks/tailrocks-marketplace"
 source = "JuliusBrussee/caveman"
 
 [codex]
+
+# Runtime hook executed after the agent CLI install and plugin
+# bootstrap, before the agent itself launches. We use it for steps
+# that need the runtime-injected claude CLI (e.g. `claude mcp add …`)
+# and therefore cannot run at image-build time. See scripts/pre-launch.sh.
+[hooks]
+pre_launch = "scripts/pre-launch.sh"
