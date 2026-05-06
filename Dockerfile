@@ -59,3 +59,17 @@ RUN mise install "node@${NODE_VERSION}" && \
 
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
+
+# caveman installer adds the components the jackin plugin system does
+# not manage: SessionStart/UserPromptSubmit hooks, the statusline badge,
+# and the caveman-shrink MCP proxy. Codex uses the npx-skills path
+# rather than the Claude plugin marketplace, so both agents need this
+# pass. `--with-init` is intentionally omitted: that flag writes
+# per-repo IDE rule files (`.github/copilot-instructions.md`,
+# `AGENTS.md`, etc.) into `$PWD`, which at image-build time is `/` and
+# would pollute the image root with files the runtime workspace mount
+# hides anyway. `. ~/.profile` activates mise so node/npx shims resolve
+# for the codex target.
+RUN . ~/.profile && \
+    curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | \
+    bash -s -- --with-hooks --with-mcp-shrink --only claude --only codex
