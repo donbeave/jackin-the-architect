@@ -74,15 +74,14 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 # already declared in `jackin.role.toml` and gets installed at runtime
 # by jackin's `install-claude-plugins.sh`, so we don't repeat it here.
 #
-# Codex side: caveman ships as a set of AGENTS.md-style skills, not as a
-# Claude plugin. `npx skills add … -a codex --global` writes them to
-# `~/.agents/skills/caveman*`, which is the location the codex CLI looks
-# up at runtime. `--yes` makes it non-interactive (build context has no
-# TTY); `--global` selects `~/.agents/skills/` over `$PWD/.agents/`
-# (which would be `/.agents` at build time and EACCES anyway). `cd
-# /home/agent` is defensive — `--global` honors `$HOME` regardless, but
-# any future relative-path fallback in the skills CLI lands somewhere
-# sensible instead of `/`.
+# npx-skills side: Codex and Amp use caveman's AGENTS.md-style skills,
+# not the Claude plugin marketplace. Both profiles write the universal
+# `~/.agents/skills/caveman*` tree. `--yes` makes it non-interactive
+# (build context has no TTY); `--global` selects home-scoped installs
+# over `$PWD/.agents` (which would be `/.agents` at build time and
+# EACCES anyway). `cd /home/agent` is defensive — `--global` honors
+# `$HOME` regardless, but any future relative-path fallback in the
+# skills CLI lands somewhere sensible instead of `/`.
 #
 # Two components from the root installer are intentionally NOT run here:
 #   * `--with-mcp-shrink` — `claude mcp add …` needs the runtime-injected
@@ -105,4 +104,5 @@ RUN . ~/.profile && \
     test -f /home/agent/.claude/hooks/caveman-mode-tracker.js && \
     cd /home/agent && \
     npx -y skills add JuliusBrussee/caveman -a codex --yes --global && \
-    test -d /home/agent/.agents/skills/caveman
+    npx -y skills add JuliusBrussee/caveman -a amp --yes --global && \
+    test -f /home/agent/.agents/skills/caveman/SKILL.md

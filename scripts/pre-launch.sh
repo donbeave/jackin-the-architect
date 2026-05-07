@@ -4,12 +4,12 @@
 # agent CLI is installed and plugins are bootstrapped, but before the
 # agent itself launches.
 #
-# Why a runtime hook and not an image-build step: every command in
-# here needs the claude CLI, and the claude CLI is injected per
+# Why a runtime hook and not an image-build step: the Claude MCP
+# registration needs the claude CLI, and the claude CLI is injected per
 # container by jackin's derived-image build (Agent::install_block in
 # jackin's src/agent/mod.rs), not baked into the published architect
-# image. Trying to run `claude mcp add …` at architect-image build
-# time silently no-ops because the binary is not on PATH yet.
+# image. Trying to run `claude mcp add …` at architect-image build time
+# silently no-ops because the binary is not on PATH yet.
 set -euo pipefail
 
 log() {
@@ -38,6 +38,10 @@ log() {
 #
 # Reference: https://github.com/JuliusBrussee/caveman/tree/main/mcp-servers/caveman-shrink
 register_caveman_shrink() {
+    if [ "${JACKIN_AGENT:-}" != "claude" ]; then
+        return 0
+    fi
+
     if ! command -v claude >/dev/null 2>&1; then
         log "claude CLI not on PATH — skipping caveman-shrink registration"
         return 0
@@ -54,4 +58,19 @@ register_caveman_shrink() {
     claude mcp add caveman-shrink -- npx -y caveman-shrink
 }
 
+verify_codex_caveman_skills() {
+    if [ "${JACKIN_AGENT:-}" != "codex" ]; then
+        return 0
+    fi
+
+    if [ -f /home/agent/.agents/skills/caveman/SKILL.md ]; then
+        log "codex caveman skills present in /home/agent/.agents/skills"
+        return 0
+    fi
+
+    log "WARNING: codex caveman skill missing from /home/agent/.agents/skills"
+    log "rebuild/pull projectjackin/jackin-the-architect:latest or run: npx -y skills add JuliusBrussee/caveman -a codex --yes --global"
+}
+
 register_caveman_shrink
+verify_codex_caveman_skills
