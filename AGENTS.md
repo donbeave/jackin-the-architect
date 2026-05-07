@@ -23,6 +23,9 @@ Inherits all of jackin-agent-smith's rules, and adds:
 
 ## Required pre-commit checks
 
+Do not list `git diff --check` as PR verification for this repo. It is not a
+meaningful acceptance check here; prefer the targeted checks below plus CI.
+
 ```bash
 # 1. What's staged? Anything surprising?
 git status --porcelain

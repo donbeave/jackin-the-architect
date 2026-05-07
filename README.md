@@ -16,6 +16,11 @@ To run with Codex instead of Claude:
 jackin load the-architect --agent codex
 ```
 
+Codex gets caveman through Codex skills under `/home/agent/.agents/skills`,
+not through the Claude plugin/statusline hook path. In a Codex session, trigger
+it with text such as `caveman mode`; Claude-only UI pieces like the statusline
+badge and `/caveman` hook command are not expected there.
+
 ## Contract
 
 - Final Dockerfile stage must literally be `FROM projectjackin/construct:trixie`
