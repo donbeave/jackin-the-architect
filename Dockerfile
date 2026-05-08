@@ -6,19 +6,20 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # bump is one line per tool, and so they are easy to grep / override at
 # build time via `docker build --build-arg RUST_VERSION=...`.
 #
-# RUST_VERSION must stay in sync with:
-#   - the `rust:<version>-trixie` pin in the construct base image
-#     (jackin/docker/construct/Dockerfile)
-#   - `rust-toolchain.toml` in the jackin/ repo
-# so all three layers agree on the toolchain operators get at runtime.
+# RUST_VERSION is intended to track the toolchain the upstream jackin
+# crate's `rust-toolchain.toml` declares and the Rust pin baked into
+# `projectjackin/construct:trixie`. Out-of-band sync — there is no
+# automated check.
 #
-# CAVEMAN_REF pins the upstream caveman repo to a specific commit so a
-# `docker build --no-cache` can't pick up a hijacked `main`. Bump after
-# auditing https://github.com/JuliusBrussee/caveman/commits/main .
+# CAVEMAN_REF pins the upstream caveman repo to a tagged release so a
+# `docker build --no-cache` can't pick up a hijacked `main`. Always use
+# a release tag from https://github.com/JuliusBrussee/caveman/releases
+# — never `main` and never a raw commit SHA. Bump after reading the
+# release notes for the new tag.
 ARG RUST_VERSION=1.95.0
 ARG NODE_VERSION=lts
 ARG OPENTOFU_VERSION=1.11.6
-ARG CAVEMAN_REF=ef6050c5e1848b6880ff47c32ade1a608a64f85e
+ARG CAVEMAN_REF=v1.7.0
 
 # Install system packages needed for Rust builds
 RUN sudo apt-get update && \
@@ -70,12 +71,13 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
 # Caveman install for the agents this image supports (claude + codex).
-# We bypass the root caveman `install.sh` because its per-agent detection
-# probes (`command:claude`, `command:codex`) fail at image-build time —
-# both agent CLIs are injected by the jackin runtime per-container, not
-# baked into this image, so the root installer sees "nothing detected"
-# and exits 0 with no files written. Calling each component installer
-# directly skips detection and lands the files in the image layer.
+# We bypass the root caveman `install.sh` because its per-agent
+# detection probes (`command:claude`, `command:codex`) fail at
+# image-build time — jackin injects both agent CLIs per-container at
+# launch time rather than baking them into this published image, so
+# the root installer sees "nothing detected" and exits 0 with no
+# files written. Calling each component installer directly skips
+# detection and lands the files in the image layer.
 #
 # Claude side: `hooks/install.sh` writes `~/.claude/hooks/{6 files}` and
 # patches `~/.claude/settings.json` with SessionStart/UserPromptSubmit
@@ -105,17 +107,14 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 #     pollute the image root with files the runtime workspace mount
 #     hides anyway. Per-repo concern, not per-image.
 #
-# CAVEMAN_REF pins the install.sh URL to a specific commit so a
-# `docker build --no-cache` can't pick up a hijacked `main`. The skills
-# install is intentionally NOT pinned via `JuliusBrussee/caveman#<ref>`
-# — passing a ref makes the `skills` CLI invoke `git clone` of an
-# arbitrary commit, which fails on the build runner ("Failed to clone
-# https://github.com/JuliusBrussee/caveman.git"; the CLI does the
-# equivalent of a shallow clone of the default branch tip and then
-# tries to check out the SHA, which the shallow clone doesn't have).
-# We accept that the skills source tracks `main` at install time; the
-# install.sh URL pin is the meaningful hijack-`main` defense because
-# the install.sh is what writes the executable hooks into the image.
+# CAVEMAN_REF (defined in the ARG block at the top of the file) pins
+# both the install.sh fetch URL and the skills CLI source ref to the
+# same upstream release tag, so `main` is never used at any point in
+# this build. Tag refs (vs. raw SHAs) work with the `skills` CLI's
+# git-clone-and-checkout strategy because git's clone protocol
+# advertises tags by default; an arbitrary SHA does not appear on the
+# default-branch shallow clone the CLI does, which is why an earlier
+# `JuliusBrussee/caveman#<sha>` attempt failed in CI (#28).
 #
 # `bash -e` forces fail-fast on the upstream installer regardless of
 # its own error-handling. The trailing `test -f` lines fail the build
@@ -130,5 +129,5 @@ RUN . ~/.profile && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
     cd "${HOME}" && \
-    npx -y skills add JuliusBrussee/caveman -a codex --yes --global && \
+    npx -y skills add "JuliusBrussee/caveman#${CAVEMAN_REF}" -a codex --yes --global && \
     test -f "${HOME}/.agents/skills/caveman/SKILL.md"
