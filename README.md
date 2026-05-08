@@ -47,6 +47,10 @@ The `hooks/pre-launch.sh` script runs before the agent CLI starts:
 1. **caveman-shrink MCP** — registers caveman-shrink as a Claude MCP middleware (claude agent only, idempotent; fails launch if the claude CLI is missing — see hook header for the contract)
 2. **Codex caveman skills check** — fails launch if `~/.agents/skills/caveman/SKILL.md` is missing (codex agent only); a missing file means the image was built wrong
 
+## PR workflow
+
+Reference for which Claude Code review command to run at which point in a PR's life: see [`docs/pr-workflow.md`](./docs/pr-workflow.md).
+
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
