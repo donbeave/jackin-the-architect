@@ -45,17 +45,30 @@ RUN mise install "node@${NODE_VERSION}" && \
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
-# Caveman bypasses the root `install.sh` because its per-agent
-# detection probes find no agent CLI at image-build time (jackin
-# injects them at launch). Each component installer is invoked
-# directly. `--with-mcp-shrink` is skipped here because it needs the
-# runtime claude CLI; we register caveman-shrink in
-# `hooks/pre-launch.sh`. `--with-init` is skipped because it writes
-# per-repo IDE rule files into $PWD (=`/` at build time).
+# Caveman install for all agents this image supports (claude + codex + amp).
+# We bypass the root caveman `install.sh` because its per-agent detection
+# probes (`command:claude`, `command:codex`, `command:amp`) fail at
+# image-build time — every agent CLI is injected by the jackin runtime
+# per-container, not baked into this image, so the root installer sees
+# "nothing detected" and exits 0 with no files written. Calling each
+# component installer directly skips detection and lands the files in
+# the image layer. `--with-mcp-shrink` and `--with-init` stay disabled:
+# the former needs the runtime claude CLI and is registered through
+# `hooks/pre-launch.sh`, the latter writes per-repo IDE rule files into
+# $PWD (=`/` at build time).
 #
 # `bash -e` forces fail-fast inside the upstream installer regardless
 # of its own error-handling. `test -f` lines guard against the
 # silent-empty-install failure mode that has bitten this build before.
+#
+# The `&&` chain is the real per-invocation gate: a non-zero exit from
+# any `npx skills add` aborts the whole RUN. The trailing
+# `test -f .../caveman/SKILL.md` is a layer-presence smoke check, not
+# a per-profile success marker — the caveman skill tree is shared
+# across the codex and amp profiles, so its presence after both
+# invocations cannot prove that the amp install specifically ran.
+# Trust the npx exit code; do not weaken the chain with `|| true`
+# or `;`.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
     curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/v${CAVEMAN_VERSION}/hooks/install.sh" | bash -e && \
@@ -63,5 +76,8 @@ RUN . ~/.profile && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
     cd "${HOME}" && \
+    echo "[caveman] installing codex profile" && \
     npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a codex --yes --global && \
+    echo "[caveman] installing amp profile" && \
+    npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a amp --yes --global && \
     test -f "${HOME}/.agents/skills/caveman/SKILL.md"
