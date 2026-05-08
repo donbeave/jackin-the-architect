@@ -105,13 +105,24 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 #     pollute the image root with files the runtime workspace mount
 #     hides anyway. Per-repo concern, not per-image.
 #
-# CAVEMAN_REF pins both the install.sh and the skills source ref to the
-# same commit. `bash -e` forces fail-fast on the upstream installer
-# regardless of its own error-handling. The trailing `test -f` lines
-# fail the build if upstream changes a script and it silently stops
-# writing files — the previous breakage (root installer exit 0 with
-# empty `~/.claude/`) went undetected for a full release because
-# nothing asserted the result.
+# CAVEMAN_REF pins the install.sh URL to a specific commit so a
+# `docker build --no-cache` can't pick up a hijacked `main`. The skills
+# install is intentionally NOT pinned via `JuliusBrussee/caveman#<ref>`
+# — passing a ref makes the `skills` CLI invoke `git clone` of an
+# arbitrary commit, which fails on the build runner ("Failed to clone
+# https://github.com/JuliusBrussee/caveman.git"; the CLI does the
+# equivalent of a shallow clone of the default branch tip and then
+# tries to check out the SHA, which the shallow clone doesn't have).
+# We accept that the skills source tracks `main` at install time; the
+# install.sh URL pin is the meaningful hijack-`main` defense because
+# the install.sh is what writes the executable hooks into the image.
+#
+# `bash -e` forces fail-fast on the upstream installer regardless of
+# its own error-handling. The trailing `test -f` lines fail the build
+# if upstream changes a script and it silently stops writing files —
+# the previous breakage (root installer exit 0 with empty
+# `~/.claude/`) went undetected for a full release because nothing
+# asserted the result.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
     curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/${CAVEMAN_REF}/hooks/install.sh" | bash -e && \
@@ -119,5 +130,5 @@ RUN . ~/.profile && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
     cd "${HOME}" && \
-    npx -y skills add "JuliusBrussee/caveman#${CAVEMAN_REF}" -a codex --yes --global && \
+    npx -y skills add JuliusBrussee/caveman -a codex --yes --global && \
     test -f "${HOME}/.agents/skills/caveman/SKILL.md"
