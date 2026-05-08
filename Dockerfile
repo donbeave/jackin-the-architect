@@ -61,11 +61,20 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 # of its own error-handling. `test -f` lines guard against the
 # silent-empty-install failure mode that has bitten this build before.
 #
+# npx-skills side: Codex and Amp use caveman's AGENTS.md-style skills,
+# not the Claude plugin marketplace. Both profiles write the universal
+# `~/.agents/skills/caveman*` tree. `--yes` makes it non-interactive
+# (build context has no TTY); `--global` selects home-scoped installs
+# over `$PWD/.agents` (which would be `/.agents` at build time and
+# EACCES anyway). `cd "${HOME}"` is defensive — `--global` honors
+# `$HOME` regardless, but any future relative-path fallback in the
+# skills CLI lands somewhere sensible instead of `/`.
+#
 # The `&&` chain is the real per-invocation gate: a non-zero exit from
-# any `npx skills add` aborts the whole RUN. The trailing
-# `test -f .../caveman/SKILL.md` is a layer-presence smoke check, not
-# a per-profile success marker — the caveman skill tree is shared
-# across the codex and amp profiles, so its presence after both
+# any `npx skills add` aborts the whole RUN and fails the build. The
+# trailing `test -f .../caveman/SKILL.md` is a layer-presence smoke
+# check, not a per-profile success marker — the caveman skill tree is
+# shared across the codex and amp profiles, so its presence after both
 # invocations cannot prove that the amp install specifically ran.
 # Trust the npx exit code; do not weaken the chain with `|| true`
 # or `;`.
