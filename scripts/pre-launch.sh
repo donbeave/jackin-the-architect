@@ -12,9 +12,14 @@
 # silently no-ops because the binary is not on PATH yet.
 set -euo pipefail
 
-log() {
-    printf '[architect-pre-launch] %s\n' "$*"
-}
+# Line-numbered ERR trap so a future maintainer who wraps a function
+# call in `if foo; then …` (which suspends `errexit`) still gets a
+# diagnostic if the function later fails.
+trap 'printf "[architect-pre-launch] ERROR: failed at line %s (exit %s)\n" "$LINENO" "$?" >&2; exit 1' ERR
+
+log()  { printf '[architect-pre-launch] %s\n' "$*"; }
+warn() { printf '[architect-pre-launch] WARNING: %s\n' "$*" >&2; }
+err()  { printf '[architect-pre-launch] ERROR: %s\n'   "$*" >&2; }
 
 # ── caveman-shrink MCP middleware proxy ───────────────────────────────
 #
@@ -38,20 +43,25 @@ log() {
 #
 # Reference: https://github.com/JuliusBrussee/caveman/tree/main/mcp-servers/caveman-shrink
 register_caveman_shrink() {
-    if [ "${JACKIN_AGENT:-}" != "claude" ]; then
-        return 0
-    fi
-
+    # The script header documents the runtime contract: when JACKIN_AGENT=claude,
+    # jackin's derived-image build guarantees the claude CLI is on PATH before
+    # this hook runs. A missing CLI here means that contract was violated.
     if ! command -v claude >/dev/null 2>&1; then
-        log "claude CLI not on PATH — skipping caveman-shrink registration"
-        return 0
+        err "JACKIN_AGENT=claude but claude CLI not on PATH — jackin install_block failed"
+        exit 1
     fi
 
     # Idempotent: skip on subsequent container starts. `claude mcp get`
-    # exits non-zero if the entry doesn't exist; redirect to keep the
-    # "no server found" message out of the launch banner.
-    if claude mcp get caveman-shrink >/dev/null 2>&1; then
+    # exits non-zero if the entry doesn't exist; capture stderr so an
+    # auth/parse/crash error is distinguished from the benign "not found"
+    # case. The benign message is "No MCP server with name …".
+    local mcp_get_err
+    if mcp_get_err="$(claude mcp get caveman-shrink 2>&1 >/dev/null)"; then
         return 0
+    fi
+    if [[ "$mcp_get_err" != *"No MCP server"* ]]; then
+        err "claude mcp get failed unexpectedly: $mcp_get_err"
+        exit 1
     fi
 
     log "registering caveman-shrink MCP server"
@@ -59,18 +69,22 @@ register_caveman_shrink() {
 }
 
 verify_codex_caveman_skills() {
-    if [ "${JACKIN_AGENT:-}" != "codex" ]; then
+    if [ -f "${HOME}/.agents/skills/caveman/SKILL.md" ]; then
+        log "codex caveman skills present in ${HOME}/.agents/skills"
         return 0
     fi
 
-    if [ -f /home/agent/.agents/skills/caveman/SKILL.md ]; then
-        log "codex caveman skills present in /home/agent/.agents/skills"
-        return 0
-    fi
-
-    log "WARNING: codex caveman skill missing from /home/agent/.agents/skills"
-    log "rebuild/pull projectjackin/jackin-the-architect:latest or run: npx -y skills add JuliusBrussee/caveman -a codex --yes --global"
+    err "codex caveman skill missing from ${HOME}/.agents/skills"
+    err "this image is broken — rebuild/pull projectjackin/jackin-the-architect:latest or run: npx -y skills add JuliusBrussee/caveman -a codex --yes --global"
+    exit 1
 }
 
-register_caveman_shrink
-verify_codex_caveman_skills
+# Per-agent dispatch. An empty or unknown JACKIN_AGENT surfaces a
+# warning instead of silently no-op-ing, so a misspelling or a
+# regression in jackin's env-injection is visible at boot.
+case "${JACKIN_AGENT:-}" in
+    claude) register_caveman_shrink ;;
+    codex)  verify_codex_caveman_skills ;;
+    "")     warn "JACKIN_AGENT unset — skipping per-agent setup" ;;
+    *)      warn "unknown JACKIN_AGENT=${JACKIN_AGENT} — skipping per-agent setup" ;;
+esac
