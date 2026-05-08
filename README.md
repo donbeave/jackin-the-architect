@@ -1,6 +1,6 @@
 # the-architect
 
-`the-architect` is the jackin agent for developing [jackin](https://github.com/donbeave/jackin) itself.
+`the-architect` is the jackin agent role for developing [jackin](https://github.com/donbeave/jackin) itself.
 
 It provides the Rust development environment needed to build and test the jackin CLI.
 

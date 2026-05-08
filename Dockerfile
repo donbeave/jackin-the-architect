@@ -11,15 +11,17 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # `projectjackin/construct:trixie`. Out-of-band sync — there is no
 # automated check.
 #
-# CAVEMAN_REF pins the upstream caveman repo to a tagged release so a
-# `docker build --no-cache` can't pick up a hijacked `main`. Always use
-# a release tag from https://github.com/JuliusBrussee/caveman/releases
-# — never `main` and never a raw commit SHA. Bump after reading the
-# release notes for the new tag.
+# CAVEMAN_VERSION pins the upstream caveman repo to a tagged release
+# so a `docker build --no-cache` can't pick up a hijacked `main`.
+# Always use a release version from
+# https://github.com/JuliusBrussee/caveman/releases — never `main`
+# and never a raw commit SHA. Bump after reading the release notes
+# for the new version. The value is the version number only; the `v`
+# prefix is added in the URL/skills-ref usage below.
 ARG RUST_VERSION=1.95.0
 ARG NODE_VERSION=lts
 ARG OPENTOFU_VERSION=1.11.6
-ARG CAVEMAN_REF=v1.7.0
+ARG CAVEMAN_VERSION=1.7.0
 
 # Install system packages needed for Rust builds
 RUN sudo apt-get update && \
@@ -107,14 +109,15 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 #     pollute the image root with files the runtime workspace mount
 #     hides anyway. Per-repo concern, not per-image.
 #
-# CAVEMAN_REF (defined in the ARG block at the top of the file) pins
-# both the install.sh fetch URL and the skills CLI source ref to the
-# same upstream release tag, so `main` is never used at any point in
-# this build. Tag refs (vs. raw SHAs) work with the `skills` CLI's
-# git-clone-and-checkout strategy because git's clone protocol
-# advertises tags by default; an arbitrary SHA does not appear on the
-# default-branch shallow clone the CLI does, which is why an earlier
-# `JuliusBrussee/caveman#<sha>` attempt failed in CI (#28).
+# CAVEMAN_VERSION (defined in the ARG block at the top of the file)
+# pins both the install.sh fetch URL and the skills CLI source ref to
+# the same upstream release tag (`v${CAVEMAN_VERSION}`), so `main` is
+# never used at any point in this build. Tag refs (vs. raw SHAs) work
+# with the `skills` CLI's git-clone-and-checkout strategy because
+# git's clone protocol advertises tags by default; an arbitrary SHA
+# does not appear on the default-branch shallow clone the CLI does,
+# which is why an earlier `JuliusBrussee/caveman#<sha>` attempt
+# failed in CI (#28).
 #
 # `bash -e` forces fail-fast on the upstream installer regardless of
 # its own error-handling. The trailing `test -f` lines fail the build
@@ -124,10 +127,10 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 # asserted the result.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
-    curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/${CAVEMAN_REF}/hooks/install.sh" | bash -e && \
+    curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/v${CAVEMAN_VERSION}/hooks/install.sh" | bash -e && \
     test -f "${HOME}/.claude/hooks/caveman-statusline.sh" && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
     cd "${HOME}" && \
-    npx -y skills add "JuliusBrussee/caveman#${CAVEMAN_REF}" -a codex --yes --global && \
+    npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a codex --yes --global && \
     test -f "${HOME}/.agents/skills/caveman/SKILL.md"
