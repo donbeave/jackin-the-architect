@@ -5,11 +5,10 @@
 # agent itself launches.
 #
 # Why a runtime hook and not an image-build step: the Claude MCP
-# registration needs the claude CLI, and the claude CLI is injected per
-# container by jackin's derived-image build (Agent::install_block in
-# jackin's src/agent/mod.rs), not baked into the published architect
-# image. Trying to run `claude mcp add …` at architect-image build time
-# silently no-ops because the binary is not on PATH yet.
+# registration needs the claude CLI, which jackin injects per container
+# at launch time rather than baking into this published image. Trying
+# to run `claude mcp add …` at image-build time silently no-ops because
+# the binary is not on PATH yet.
 set -euo pipefail
 
 # Line-numbered ERR trap so a future maintainer who wraps a function
