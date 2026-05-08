@@ -50,7 +50,7 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 # injects them at launch). Each component installer is invoked
 # directly. `--with-mcp-shrink` is skipped here because it needs the
 # runtime claude CLI; we register caveman-shrink in
-# `scripts/pre-launch.sh`. `--with-init` is skipped because it writes
+# `hooks/pre-launch.sh`. `--with-init` is skipped because it writes
 # per-repo IDE rule files into $PWD (=`/` at build time).
 #
 # `bash -e` forces fail-fast inside the upstream installer regardless

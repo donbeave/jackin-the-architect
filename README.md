@@ -1,45 +1,51 @@
-# the-architect
+# The Architect
 
-`the-architect` is the jackin agent role for developing [jackin](https://github.com/donbeave/jackin) itself.
+**The Architect** is the jackin agent role for developing [jackin](https://github.com/donbeave/jackin) itself (role identifier `the-architect`). It provides the Rust development environment needed to build and test the jackin CLI.
 
-It provides the Rust development environment needed to build and test the jackin CLI.
-
-## Usage
+`jackin` validates this repo's Dockerfile, derives the final image itself, and mounts the cached repo checkout into `/workspace` when you run:
 
 ```sh
 jackin load the-architect
-```
-
-To run with Codex instead of Claude:
-
-```sh
+# or, with the codex CLI instead of claude:
 jackin load the-architect --agent codex
 ```
 
-Codex gets caveman through Codex skills under `/home/agent/.agents/skills`,
-not through the Claude plugin/statusline hook path. In a Codex session, trigger
-it with text such as `caveman mode`; Claude-only UI pieces like the statusline
-badge and `/caveman` hook command are not expected there.
+In a Codex session, caveman is delivered through Codex skills under `~/.agents/skills` rather than the Claude plugin/statusline path; trigger it with text such as `caveman mode`. Claude-only UI pieces like the statusline badge and `/caveman` hook command are not expected there.
 
 ## Contract
 
 - Final Dockerfile stage must literally be `FROM projectjackin/construct:trixie`
 - Plugins are declared in `jackin.role.toml`
+- Threat model and hard rules: see [AGENTS.md](./AGENTS.md)
 
 ## Environment
 
-- **Rust** (latest stable via mise) with clippy and rustfmt
-- **cargo-nextest** — fast test runner
-- **cargo-watch** — file watcher for continuous builds/tests
-- **rust-best-practices** — Rust review, API design, testing, docs, Clippy/rustfmt, and maintainability guidance from [`tailrocks/rust-best-practices`](https://github.com/tailrocks/rust-best-practices)
-- **Node.js** LTS (via mise)
+Versions pinned in `Dockerfile` ARGs (`RUST_VERSION`, `NODE_VERSION`, `OPENTOFU_VERSION`, `CAVEMAN_VERSION`); bump via `docker build --build-arg <NAME>=<value>`.
+
+- **Rust** (via mise) with clippy, rustfmt, rust-analyzer, cargo-nextest, cargo-watch
+- **Node.js** (via mise)
+- **OpenTofu** (via mise)
+- **Caveman** token-compression hooks + skills (claude + codex profiles, pinned to a tagged release)
 - System build tools (`build-essential`, `libssl-dev`, `pkg-config`, `cmake`)
 
 Shared shell/runtime tools come from `projectjackin/construct:trixie`.
 
-## Plugin Trust
+## Plugins
 
-- `rust-best-practices@tailrocks-marketplace` is installed from [`tailrocks/rust-best-practices`](https://github.com/tailrocks/rust-best-practices) via [`tailrocks/tailrocks-marketplace`](https://github.com/tailrocks/tailrocks-marketplace). The plugin is source-readable, Apache-2.0 licensed, and scoped to Rust engineering guidance rather than executable runtime hooks.
+Declared in [`jackin.role.toml`](./jackin.role.toml) under `[claude].plugins` and bootstrapped at runtime by jackin. Marketplaces beyond `@claude-plugins-official`:
+
+- `@jackin-marketplace` — [jackin-project/jackin-marketplace](https://github.com/jackin-project/jackin-marketplace) (source of `jackin-dev`)
+- `@tailrocks-marketplace` — [tailrocks/tailrocks-marketplace](https://github.com/tailrocks/tailrocks-marketplace) (source of `rust-best-practices`)
+- `@caveman` — [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) (source of `caveman`; pinned to a tagged release via Dockerfile `CAVEMAN_VERSION`)
+
+Trust rationale: see [AGENTS.md § Threat model](./AGENTS.md#threat-model).
+
+## Pre-launch hooks
+
+The `hooks/pre-launch.sh` script runs before the agent CLI starts:
+
+1. **caveman-shrink MCP** — registers caveman-shrink as a Claude MCP middleware (claude agent only, idempotent; fails launch if the claude CLI is missing — see hook header for the contract)
+2. **Codex caveman skills check** — fails launch if `~/.agents/skills/caveman/SKILL.md` is missing (codex agent only); a missing file means the image was built wrong
 
 ## License
 
