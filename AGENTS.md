@@ -1,30 +1,31 @@
 # AGENTS.md — jackin-the-architect
 
-A privileged Claude Code agent image. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, and ~20 Claude Code plugins including `plugin-dev`, `hookify`, and `caveman`. Named `the-architect` because it has the broadest operator capability of the agent images — it can manage the entire `jackin-project` repo collection.
+A privileged Claude Code / Codex agent image for developing jackin itself. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, the caveman token-compression hooks (claude) + skills (codex), and a curated plugin set including `pr-review-toolkit`, `security-guidance`, `rust-best-practices`, and `caveman`. Named `the-architect` because it has the broadest operator capability of the agent role family — it can manage the entire `jackin-project` repo collection.
 
-**Image distribution is public.** Because of the plugin count and the presence of OpenTofu (which can manage org-write credentials at runtime), this image has a larger blast radius than the sibling `jackin-agent-smith`. Treat it with proportionally more care.
+**Image distribution is public.** Because of the plugin breadth and the presence of OpenTofu (which can manage org-write credentials at runtime), this image has a larger blast radius than the sibling code-review-focused role. Treat it with proportionally more care.
 
 ## Threat model
 
-Same base concerns as `jackin-agent-smith` (base image, mise pulls, runtime credentials, layer secrets, plugin trust), plus:
+Threat surface for this image:
 
-1. **Plugin breadth.** 20 plugins, each with its own update cadence, means a compromised plugin in any of them runs with the agent's full capability. `plugin-dev`, `hookify`, and the third-party `caveman` plugin in particular can generate code that auto-executes via hooks. `caveman` (source [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman)) is the second trust anchor outside `@claude-plugins-official` / `@jackin-marketplace`, alongside `rust-best-practices@tailrocks-marketplace`; trust here is anchored in operator vetting of the maintainer, not in source audit.
+1. **Plugin breadth.** Each plugin in `jackin.role.toml` has its own update cadence; a compromised plugin runs with the agent's full capability. `caveman` (source [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman), pinned in the Dockerfile via `CAVEMAN_VERSION` to a tagged release — never `main` and never a raw SHA) is one of the trust anchors outside `@claude-plugins-official` / `@jackin-marketplace`, alongside `rust-best-practices@tailrocks-marketplace`. Trust is anchored in operator vetting of the maintainer, not in source audit.
 2. **OpenTofu credential adjacency.** An operator running this image against `jackin-github-terraform` exports `GITHUB_TOKEN` with org-admin scope into the shell. Anything the agent does (any plugin, any skill) can see that token via `/proc/*/environ`.
 3. **Rust `cargo install`.** `cargo install --locked cargo-nextest cargo-watch` pulls from crates.io at build time. Lock file pins transitive deps, but root crates are unpinned — a malicious version of `cargo-watch` on crates.io lands in a future image rebuild.
-4. **Wider tool surface for supply-chain.** Rust + Node + OpenTofu + mise = four separate package ecosystems, each with its own registry trust.
+4. **Multi-ecosystem supply chain.** Each ecosystem (mise's plugin registry plus the per-runtime upstreams it fetches from for Rust, Node, OpenTofu; crates.io via `cargo install`; the pinned caveman GitHub ref) brings its own trust root.
+5. **Base image supply chain.** `FROM projectjackin/construct:trixie` — whoever can push to `projectjackin/construct` serves the base. The `trixie` tag is mutable; pinning by digest would harden this but breaks the monthly base-image refresh flow.
 
 ## Hard rules (do not break these)
 
-Inherits all of jackin-agent-smith's rules, and adds:
-
-1. **Never add a plugin without documenting its trust anchor.** Marketplace name alone is insufficient for this repo — note in the PR why the specific plugin is trusted.
-2. **Never `ENV GITHUB_TOKEN=...` or any credential ENV.** OpenTofu reads from the shell at run time; baking any credential into the image exposes it to every puller.
-3. **`cargo install` without `--locked` is forbidden.** Every `cargo install` line must include `--locked` so the lock file pins transitive deps.
+1. **Final stage must be `FROM projectjackin/construct:trixie`.** This is the contract jackin enforces; breaking it makes the role unloadable.
+2. **Never add a plugin without documenting its trust anchor.** Marketplace name alone is insufficient — note in the PR why the specific plugin is trusted.
+3. **Never `ENV GITHUB_TOKEN=...` or any credential ENV.** OpenTofu reads from the shell at run time; baking any credential into the image exposes it to every puller.
+4. **`cargo install` without `--locked` is forbidden.** Every `cargo install` line must include `--locked` so the lock file pins transitive deps. The pre-commit check below enforces this; do not work around it.
+5. **No build-time secrets in plain `ARG` / `ENV`.** If a step needs a secret, use `--mount=type=secret`.
+6. **The marketplace allow-list in pre-commit check #3 must stay in sync with `[[claude.marketplaces]]` in `jackin.role.toml`.** Adding a new marketplace requires updating both, otherwise the audit will flag every plugin from it.
 
 ## Required pre-commit checks
 
-Do not list `git diff --check` as PR verification for this repo. It is not a
-meaningful acceptance check here; prefer the targeted checks below plus CI.
+Do not list `git diff --check` as PR verification for this repo. Prefer the targeted checks below plus CI.
 
 ```bash
 # 1. What's staged? Anything surprising?
@@ -38,10 +39,11 @@ if git diff --cached --name-only | grep -qx Dockerfile; then
     && { echo "UN-LOCKED cargo install in Dockerfile"; exit 1; } || true
 fi
 
-# 3. jackin.role.toml plugin-source audit
+# 3. jackin.role.toml plugin-source audit — flag non-default marketplaces
 if git diff --cached --name-only | grep -qx jackin.role.toml; then
-  grep -E '"[^@]+@[^"]+"' jackin.role.toml | grep -Ev '@(claude-plugins-official|jackin-marketplace)' \
-    && echo "NOTE: plugin from non-default marketplace — document trust rationale in PR body" || true
+  grep -E '"[^@]+@[^"]+"' jackin.role.toml \
+    | grep -Ev '@(claude-plugins-official|jackin-marketplace|tailrocks-marketplace|caveman)' \
+    && echo "NOTE: plugin from undocumented marketplace — document trust rationale in PR body" || true
 fi
 
 # 4. Credential scan (defense-in-depth)
@@ -88,7 +90,7 @@ PR squash-merge: the PR title becomes the commit subject, so PR titles must also
 
 ## What this does NOT protect against
 
-Inherits everything in `jackin-agent-smith`, plus:
-- A compromised plugin that runs during agent startup before a hook check fires — `hookify` and `plugin-dev` are architecturally able to introduce such plugins.
+- A compromised `projectjackin/construct` base image — trust anchored there, not here. If that image adds a malicious layer, this image inherits it.
+- A compromised plugin that runs during agent startup before a hook check fires.
 - OpenTofu credential leakage through a plugin that reads `/proc/*/environ` — runtime isolation isn't in scope here; anchor trust in the plugin set.
-- crates.io package takeover on a future rebuild — `--locked` mitigates for transitive deps but not for the top-level crate name.
+- crates.io / npm / mise registry takeover on a future rebuild — pinned versions and `--locked` mitigate transitive-dep risk but not top-level package-name takeover.
