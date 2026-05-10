@@ -7,7 +7,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # never a raw commit SHA. The `skills` CLI's shallow git-clone fetch
 # resolves tags but not arbitrary SHAs.
 ARG RUST_VERSION=1.95.0
-ARG NODE_VERSION=lts
+ARG NODE_VERSION=24.15.0
+ARG BUN_VERSION=1.3.13
+ARG JUST_VERSION=1.50.0
 ARG OPENTOFU_VERSION=1.11.6
 ARG CAVEMAN_VERSION=1.7.0
 
@@ -41,6 +43,12 @@ RUN mise install "rust@${RUST_VERSION}" && \
 
 RUN mise install "node@${NODE_VERSION}" && \
     mise use -g --pin "node@${NODE_VERSION}"
+
+RUN mise install "bun@${BUN_VERSION}" && \
+    mise use -g --pin "bun@${BUN_VERSION}"
+
+RUN mise install "just@${JUST_VERSION}" && \
+    mise use -g --pin "just@${JUST_VERSION}"
 
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
