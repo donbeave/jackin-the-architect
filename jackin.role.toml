@@ -35,7 +35,7 @@ source = "JuliusBrussee/caveman"
 [amp]
 
 [hooks]
-pre_launch = "hooks/pre-launch.sh"
+preflight = "hooks/preflight.sh"
 
 [env.CLAUDE_CODE_NO_FLICKER]
 default = "1"
