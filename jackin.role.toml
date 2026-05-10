@@ -1,3 +1,4 @@
+version = 1
 dockerfile = "Dockerfile"
 published_image = "docker.io/projectjackin/jackin-the-architect:latest"
 agents = ["claude", "codex", "amp"]
