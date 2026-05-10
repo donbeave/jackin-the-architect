@@ -1,6 +1,6 @@
 # AGENTS.md — jackin-the-architect
 
-A privileged Claude Code / Codex agent image for developing jackin itself. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, OpenTofu, the caveman token-compression hooks (claude) + skills (codex), and a curated plugin set including `pr-review-toolkit`, `security-guidance`, `rust-best-practices`, and `caveman`. Named `the-architect` because it has the broadest operator capability of the agent role family — it can manage the entire `jackin-project` repo collection.
+A privileged Claude Code / Codex agent image for developing jackin itself. Extends `projectjackin/construct:trixie` and layers Rust, Node.js, Bun, Just, OpenTofu, the caveman token-compression hooks (claude) + skills (codex), and a curated plugin set including `pr-review-toolkit`, `security-guidance`, `rust-best-practices`, and `caveman`. Named `the-architect` because it has the broadest operator capability of the agent role family — it can manage the entire `jackin-project` repo collection.
 
 **Image distribution is public.** Because of the plugin breadth and the presence of OpenTofu (which can manage org-write credentials at runtime), this image has a larger blast radius than the sibling code-review-focused role. Treat it with proportionally more care.
 
@@ -11,7 +11,7 @@ Threat surface for this image:
 1. **Plugin breadth.** Each plugin in `jackin.role.toml` has its own update cadence; a compromised plugin runs with the agent's full capability. `caveman` (source [`JuliusBrussee/caveman`](https://github.com/JuliusBrussee/caveman), pinned in the Dockerfile via `CAVEMAN_VERSION` to a tagged release — never `main` and never a raw SHA) is one of the trust anchors outside `@claude-plugins-official` / `@jackin-marketplace`, alongside `rust-best-practices@tailrocks-marketplace`. Trust is anchored in operator vetting of the maintainer, not in source audit.
 2. **OpenTofu credential adjacency.** An operator running this image against `jackin-github-terraform` exports `GITHUB_TOKEN` with org-admin scope into the shell. Anything the agent does (any plugin, any skill) can see that token via `/proc/*/environ`.
 3. **Rust `cargo install`.** `cargo install --locked cargo-nextest cargo-watch` pulls from crates.io at build time. Lock file pins transitive deps, but root crates are unpinned — a malicious version of `cargo-watch` on crates.io lands in a future image rebuild.
-4. **Multi-ecosystem supply chain.** Each ecosystem (mise's plugin registry plus the per-runtime upstreams it fetches from for Rust, Node, OpenTofu; crates.io via `cargo install`; the pinned caveman GitHub ref) brings its own trust root.
+4. **Multi-ecosystem supply chain.** Each ecosystem (mise's plugin registry plus the per-runtime upstreams it fetches from for Rust, Node, Bun, Just, OpenTofu; crates.io via `cargo install`; the pinned caveman GitHub ref) brings its own trust root.
 5. **Base image supply chain.** `FROM projectjackin/construct:trixie` — whoever can push to `projectjackin/construct` serves the base. The `trixie` tag is mutable; pinning by digest would harden this but breaks the monthly base-image refresh flow.
 
 ## Hard rules (do not break these)
