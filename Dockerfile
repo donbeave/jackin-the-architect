@@ -53,45 +53,23 @@ RUN mise install "just@${JUST_VERSION}" && \
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
-# Caveman install for all agents this image supports (claude + codex + amp).
-# We bypass the root caveman `install.sh` because its per-agent detection
-# probes (`command:claude`, `command:codex`, `command:amp`) fail at
-# image-build time — every agent CLI is injected by the jackin runtime
-# per-container, not baked into this image, so the root installer sees
-# "nothing detected" and exits 0 with no files written. Calling each
-# component installer directly skips detection and lands the files in
-# the image layer. `--with-mcp-shrink` and `--with-init` stay disabled:
-# the former needs the runtime claude CLI and is registered through
-# `hooks/pre-launch.sh`, the latter writes per-repo IDE rule files into
-# $PWD (=`/` at build time).
+# Caveman ≥1.8.0 uses a unified Node installer (bin/install.js) dispatched
+# from install.sh at the repo root. The old hooks/install.sh path is gone.
+# v1.8.0 also adds native opencode plugin support (no separate npx-skills step).
 #
-# `bash -e` forces fail-fast inside the upstream installer regardless
-# of its own error-handling. `test -f` lines guard against the
+# Agent CLIs are not present at image-build time (jackin injects them
+# per-container), so auto-detection would find nothing. `--only` forces
+# install for each agent regardless. `--no-mcp-shrink` disables the MCP
+# server that needs a running agent CLI. Init defaults to off. The trailing
+# `test -f` lines are layer-presence smoke checks — they catch the
 # silent-empty-install failure mode that has bitten this build before.
-#
-# npx-skills side: Codex and Amp use caveman's AGENTS.md-style skills,
-# not the Claude plugin marketplace. Both profiles write the universal
-# `~/.agents/skills/caveman*` tree. `--yes` makes it non-interactive
-# (build context has no TTY); `--global` selects home-scoped installs
-# over `$PWD/.agents` (which would be `/.agents` at build time and
-# EACCES anyway). `cd "${HOME}"` is defensive — `--global` honors
-# `$HOME` regardless, but any future relative-path fallback in the
-# skills CLI lands somewhere sensible instead of `/`.
-#
-# The `&&` chain is the real per-invocation gate: a non-zero exit from
-# any `npx skills add` aborts the whole RUN and fails the build. The
-# trailing `test -f .../caveman/SKILL.md` is a layer-presence smoke
-# check, not a per-profile success marker — the caveman skill tree is
-# shared across the codex and amp profiles, so its presence after both
-# invocations cannot prove that the amp install specifically ran.
-# Trust the npx exit code; do not weaken the chain with `|| true`
-# or `;`.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
-    curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/v${CAVEMAN_VERSION}/hooks/install.sh" | bash -e && \
+    curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/v${CAVEMAN_VERSION}/install.sh" | bash -s -- --only claude --only codex --only amp --only opencode --no-mcp-shrink && \
     test -f "${HOME}/.claude/hooks/caveman-statusline.sh" && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
+    test -f "${HOME}/.config/opencode/plugins/caveman/plugin.js" && \
     cd "${HOME}" && \
     echo "[caveman] installing codex profile" && \
     npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a codex --yes --global && \
