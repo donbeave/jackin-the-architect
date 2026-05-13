@@ -39,8 +39,7 @@ RUN mise install "rust@${RUST_VERSION}" && \
     mise use -g --pin "rust@${RUST_VERSION}" && \
     . ~/.profile && \
     rustup component add clippy rustfmt rust-analyzer && \
-    cargo install --locked cargo-nextest cargo-watch && \
-    cargo install --locked lychee
+    cargo install --locked cargo-nextest cargo-watch lychee
 
 RUN mise install "node@${NODE_VERSION}" && \
     mise use -g --pin "node@${NODE_VERSION}"
