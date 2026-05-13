@@ -1,7 +1,7 @@
 version = "v1alpha2"
 dockerfile = "Dockerfile"
 published_image = "docker.io/projectjackin/jackin-the-architect:latest"
-agents = ["claude", "codex", "amp"]
+agents = ["claude", "codex", "amp", "opencode"]
 
 [identity]
 name = "The Architect"
@@ -34,6 +34,9 @@ source = "JuliusBrussee/caveman"
 [codex]
 
 [amp]
+
+[opencode]
+model = "zai-coding-plan/glm-5.1"
 
 [hooks]
 preflight = "hooks/preflight.sh"
