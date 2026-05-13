@@ -53,26 +53,23 @@ RUN mise install "just@${JUST_VERSION}" && \
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
-# Caveman ≥1.8.0 uses a unified Node installer (bin/install.js) dispatched
-# from install.sh at the repo root. The old hooks/install.sh path is gone.
-# v1.8.0 also adds native opencode plugin support (no separate npx-skills step).
+# Caveman ≥1.8.0 unified Node installer. The old hooks/install.sh path is
+# gone. v1.8.0 adds native opencode plugin support (skills, agents, commands,
+# AGENTS.md ruleset). The native opencode install requires repoRoot (a local
+# clone) — curl-pipe mode can't do it — so we shallow-clone at the pinned
+# version and run bin/install.js directly.
 #
 # Agent CLIs are not present at image-build time (jackin injects them
 # per-container), so auto-detection would find nothing. `--only` forces
-# install for each agent regardless. `--no-mcp-shrink` disables the MCP
-# server that needs a running agent CLI. Init defaults to off. The trailing
-# `test -f` lines are layer-presence smoke checks — they catch the
-# silent-empty-install failure mode that has bitten this build before.
+# install for each agent. `--no-mcp-shrink` disables the MCP server that
+# needs a running agent CLI. Init defaults to off. The trailing `test -f`
+# lines are layer-presence smoke checks.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
-    curl -fsSL "https://raw.githubusercontent.com/JuliusBrussee/caveman/v${CAVEMAN_VERSION}/install.sh" | bash -s -- --only claude --only codex --only amp --only opencode --no-mcp-shrink && \
+    git clone --depth 1 --branch "v${CAVEMAN_VERSION}" https://github.com/JuliusBrussee/caveman.git /tmp/caveman && \
+    node /tmp/caveman/bin/install.js --only claude --only codex --only amp --only opencode --no-mcp-shrink && \
     test -f "${HOME}/.claude/hooks/caveman-statusline.sh" && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
     test -f "${HOME}/.config/opencode/plugins/caveman/plugin.js" && \
-    cd "${HOME}" && \
-    echo "[caveman] installing codex profile" && \
-    npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a codex --yes --global && \
-    echo "[caveman] installing amp profile" && \
-    npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a amp --yes --global && \
-    test -f "${HOME}/.agents/skills/caveman/SKILL.md"
+    rm -rf /tmp/caveman
