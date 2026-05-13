@@ -11,7 +11,7 @@ ARG NODE_VERSION=24.15.0
 ARG BUN_VERSION=1.3.13
 ARG JUST_VERSION=1.50.0
 ARG OPENTOFU_VERSION=1.11.6
-ARG CAVEMAN_VERSION=1.7.0
+ARG CAVEMAN_VERSION=1.8.2
 
 RUN sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
