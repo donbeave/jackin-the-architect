@@ -20,9 +20,9 @@ In a Codex session, caveman is delivered through Codex skills under `~/.agents/s
 
 ## Environment
 
-Versions pinned in `Dockerfile` ARGs (`RUST_VERSION`, `NODE_VERSION`, `BUN_VERSION`, `JUST_VERSION`, `OPENTOFU_VERSION`, `CAVEMAN_VERSION`); bump via `docker build --build-arg <NAME>=<value>`.
+Versions pinned in `Dockerfile` ARGs (`RUST_VERSION`, `NODE_VERSION`, `BUN_VERSION`, `JUST_VERSION`, `OPENTOFU_VERSION`, `LYCHEE_VERSION`, `CAVEMAN_VERSION`); bump via `docker build --build-arg <NAME>=<value>`.
 
-- **Rust** (via mise) with clippy, rustfmt, rust-analyzer, cargo-nextest, cargo-watch
+- **Rust** (via mise) with clippy, rustfmt, rust-analyzer, cargo-nextest, cargo-watch, lychee
 - **Node.js** (via mise)
 - **Bun** (via mise) for jackin docs development
 - **Just** (via mise) for jackin task recipes

@@ -11,6 +11,7 @@ ARG NODE_VERSION=24.15.0
 ARG BUN_VERSION=1.3.13
 ARG JUST_VERSION=1.50.0
 ARG OPENTOFU_VERSION=1.11.6
+ARG LYCHEE_VERSION=0.24.2
 ARG CAVEMAN_VERSION=1.8.2
 
 RUN sudo apt-get update && \
@@ -39,7 +40,8 @@ RUN mise install "rust@${RUST_VERSION}" && \
     mise use -g --pin "rust@${RUST_VERSION}" && \
     . ~/.profile && \
     rustup component add clippy rustfmt rust-analyzer && \
-    cargo install --locked cargo-nextest cargo-watch
+    cargo install --locked cargo-nextest cargo-watch && \
+    cargo install --locked --version "${LYCHEE_VERSION}" lychee
 
 RUN mise install "node@${NODE_VERSION}" && \
     mise use -g --pin "node@${NODE_VERSION}"
