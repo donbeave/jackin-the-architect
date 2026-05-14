@@ -53,30 +53,22 @@ RUN mise install "just@${JUST_VERSION}" && \
 RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
-# Caveman ≥1.8.0 unified Node installer. The old hooks/install.sh path is
-# gone. v1.8.0 adds native opencode plugin support (skills, agents, commands,
-# AGENTS.md ruleset). The native opencode install requires repoRoot (a local
-# clone) — curl-pipe mode can't do it — so we shallow-clone at the pinned
-# version and run bin/install.js directly.
+# Caveman ≥1.8.0 native opencode plugin needs repoRoot (a local clone);
+# curl-pipe can't do it. Shallow-clone at the pinned tag, run bin/install.js.
 #
-# Agent CLIs are not present at image-build time (jackin injects them
-# per-container), so auto-detection would find nothing. `--only` forces
-# install for each agent. `--no-mcp-shrink` disables the MCP server that
-# needs a running agent CLI. Init defaults to off.
+# Agent CLIs aren't on PATH at build time (jackin injects them per-container),
+# so auto-detection finds nothing — `--only` forces each target. `--no-mcp-shrink`
+# skips registration that needs the claude CLI; preflight.sh re-runs it at
+# container start.
 #
-# Codex and Amp skills are installed via an explicit `npx skills add ...
-# --global` call rather than through the unified installer. The unified
-# installer (`bin/install.js`) dispatches `npx skills add ... --yes --all`
-# without `--global`; under `--yes` the skills CLI's interactive scope
-# prompt is suppressed and `installGlobally` defaults to `false`, so the
-# skill is written to `<cwd>/.agents/skills/caveman/` — at image-build
-# time that's `/.agents/skills/caveman/`, which `USER agent` cannot
-# write to and the install silently fails. Explicit `--global` lands the
-# canonical files at `${HOME}/.agents/skills/caveman/SKILL.md`, which is
-# the path `hooks/preflight.sh::verify_codex_caveman_skills` checks at
-# container start. The trailing `test -f` lines are layer-presence smoke
-# checks — they catch the silent-empty-install failure mode that has
-# bitten this build before.
+# Codex and Amp skip the unified installer: it dispatches `skills add ... --yes
+# --all` without `--global`, and `--yes` suppresses the scope prompt so the CLI
+# defaults to project scope. At build time cwd is `/`, which `USER agent` can't
+# write, and the silent failure doesn't fail the overall installer (it only
+# exits non-zero when *every* detected agent fails). Explicit `--global` writes
+# the canonical tree at `${HOME}/.agents/skills/caveman/`, which is the path
+# `hooks/preflight.sh::verify_codex_caveman_skills` checks. The trailing
+# `test -f` is the smoke check that catches a future regression.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
     git clone --depth 1 --branch "v${CAVEMAN_VERSION}" https://github.com/JuliusBrussee/caveman.git /tmp/caveman && \
