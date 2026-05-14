@@ -57,11 +57,9 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 # curl-pipe can't do it. Shallow-clone at the pinned tag, run bin/install.js.
 #
 # Agent CLIs aren't on PATH at build time (jackin injects them per-container),
-# so auto-detection finds nothing — `--only` forces each target. The claude
-# MCP-shrink registration silently skips because the claude CLI isn't there
-# yet; `hooks/preflight.sh::register_caveman_shrink` re-runs it at container
-# start. Opencode's MCP-shrink entry is patched into `opencode.json` at build
-# time (no CLI needed) — dropping `--no-mcp-shrink` keeps that wiring.
+# so auto-detection finds nothing — `--only` forces each target. `--no-mcp-shrink`
+# skips registration that needs the claude CLI; preflight.sh re-runs it at
+# container start.
 #
 # Codex and Amp skip the unified installer: it dispatches `skills add ... --yes
 # --all` without `--global`, and `--yes` suppresses the scope prompt so the CLI
@@ -74,7 +72,7 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
     git clone --depth 1 --branch "v${CAVEMAN_VERSION}" https://github.com/JuliusBrussee/caveman.git /tmp/caveman && \
-    node /tmp/caveman/bin/install.js --only claude --only opencode && \
+    node /tmp/caveman/bin/install.js --only claude --only opencode --no-mcp-shrink && \
     test -f "${HOME}/.claude/hooks/caveman-statusline.sh" && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
