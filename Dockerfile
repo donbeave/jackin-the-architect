@@ -62,14 +62,31 @@ RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
 # Agent CLIs are not present at image-build time (jackin injects them
 # per-container), so auto-detection would find nothing. `--only` forces
 # install for each agent. `--no-mcp-shrink` disables the MCP server that
-# needs a running agent CLI. Init defaults to off. The trailing `test -f`
-# lines are layer-presence smoke checks.
+# needs a running agent CLI. Init defaults to off.
+#
+# Codex and Amp skills are installed via an explicit `npx skills add ...
+# --global` call rather than through the unified installer. The unified
+# installer (`bin/install.js`) dispatches `npx skills add ... --yes --all`
+# without `--global`; under `--yes` the skills CLI's interactive scope
+# prompt is suppressed and `installGlobally` defaults to `false`, so the
+# skill is written to `<cwd>/.agents/skills/caveman/` — at image-build
+# time that's `/.agents/skills/caveman/`, which `USER agent` cannot
+# write to and the install silently fails. Explicit `--global` lands the
+# canonical files at `${HOME}/.agents/skills/caveman/SKILL.md`, which is
+# the path `hooks/preflight.sh::verify_codex_caveman_skills` checks at
+# container start. The trailing `test -f` lines are layer-presence smoke
+# checks — they catch the silent-empty-install failure mode that has
+# bitten this build before.
 RUN . ~/.profile && \
     mkdir -p "${HOME}/.claude" "${HOME}/.codex" && \
     git clone --depth 1 --branch "v${CAVEMAN_VERSION}" https://github.com/JuliusBrussee/caveman.git /tmp/caveman && \
-    node /tmp/caveman/bin/install.js --only claude --only codex --only amp --only opencode --no-mcp-shrink && \
+    node /tmp/caveman/bin/install.js --only claude --only opencode --no-mcp-shrink && \
     test -f "${HOME}/.claude/hooks/caveman-statusline.sh" && \
     test -f "${HOME}/.claude/hooks/caveman-activate.js" && \
     test -f "${HOME}/.claude/hooks/caveman-mode-tracker.js" && \
     test -f "${HOME}/.config/opencode/plugins/caveman/plugin.js" && \
+    cd "${HOME}" && \
+    npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a codex --yes --global && \
+    npx -y skills add "JuliusBrussee/caveman#v${CAVEMAN_VERSION}" -a amp --yes --global && \
+    test -f "${HOME}/.agents/skills/caveman/SKILL.md" && \
     rm -rf /tmp/caveman
