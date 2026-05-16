@@ -1,7 +1,7 @@
 version = "v1alpha3"
 dockerfile = "Dockerfile"
 published_image = "docker.io/projectjackin/jackin-the-architect:latest"
-agents = ["claude", "codex", "amp", "opencode"]
+agents = ["claude", "codex", "amp", "kimi", "opencode"]
 
 [identity]
 name = "The Architect"
@@ -35,6 +35,8 @@ source = "JuliusBrussee/caveman"
 [codex]
 
 [amp]
+
+[kimi]
 
 [opencode]
 model = "zai-coding-plan/glm-5.1"
