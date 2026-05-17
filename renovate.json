@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["projectjackin/construct"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)-trixie$",
+      "enabled": true
+    }
+  ],
+  "commitBody": "Signed-off-by: Renovate Bot <renovate@whitesourcesoftware.com>"
+}
