@@ -18,53 +18,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
+      - uses: jackin-project/validate-agent-action@15ee7a8d515f76cd2bd1a508e2e6de3cf4572a0d # latest
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Install QEMU binfmt handlers
-        run: docker run --privileged --rm tonistiigi/binfmt --install arm64
-
-      - name: Initialize Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
-
-      - name: Extract construct version from Dockerfile
-        id: construct
-        run: |
-          version=$(awk '/^FROM /{n=split($2,a,":"); if(n>1){print a[2]; exit}}' Dockerfile)
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push image
-        id: build
-        env:
-          IMAGE: docker.io/projectjackin/jackin-the-architect
-        run: |
-          set -euo pipefail
-          short_sha="${GITHUB_SHA::7}"
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --tag "${IMAGE}:latest" \
-            --tag "${IMAGE}:${short_sha}" \
-            --build-arg "CONSTRUCT_VERSION=${{ steps.construct.outputs.version }}" \
-            --sbom=true \
-            --provenance=true \
-            --push \
-            .
-          {
-            echo "image=${IMAGE}"
-            echo "short_sha=${short_sha}"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Install cosign
-        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
-
-      - name: Sign image
-        env:
-          IMAGE: ${{ steps.build.outputs.image }}
-          SHORT_SHA: ${{ steps.build.outputs.short_sha }}
-        run: |
-          set -euo pipefail
-          cosign sign --yes "${IMAGE}:latest" "${IMAGE}:${SHORT_SHA}"
+          jackin-version: latest-build
+          push: 'true'
+          image: docker.io/projectjackin/jackin-the-architect
+          registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          registry-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          sign: 'true'
