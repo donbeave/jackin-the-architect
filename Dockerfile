@@ -40,22 +40,32 @@ ENV MISE_TRUSTED_CONFIG_PATHS=/workspace
 # Rust dev tools share the Rust RUN — rustup components and the
 # cargo-installed binaries are toolchain-specific. `. ~/.profile`
 # activates mise so `rustup` and `cargo` resolve via its shims.
-RUN mise install "rust@${RUST_VERSION}" && \
+RUN --mount=type=secret,id=github_token,required=false \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    mise install "rust@${RUST_VERSION}" && \
     mise use -g --pin "rust@${RUST_VERSION}" && \
     . ~/.profile && \
     rustup component add clippy rustfmt rust-analyzer && \
     cargo install --locked cargo-nextest cargo-watch lychee
 
-RUN mise install "node@${NODE_VERSION}" && \
+RUN --mount=type=secret,id=github_token,required=false \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    mise install "node@${NODE_VERSION}" && \
     mise use -g --pin "node@${NODE_VERSION}"
 
-RUN mise install "bun@${BUN_VERSION}" && \
+RUN --mount=type=secret,id=github_token,required=false \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    mise install "bun@${BUN_VERSION}" && \
     mise use -g --pin "bun@${BUN_VERSION}"
 
-RUN mise install "just@${JUST_VERSION}" && \
+RUN --mount=type=secret,id=github_token,required=false \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    mise install "just@${JUST_VERSION}" && \
     mise use -g --pin "just@${JUST_VERSION}"
 
-RUN mise install "opentofu@${OPENTOFU_VERSION}" && \
+RUN --mount=type=secret,id=github_token,required=false \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    mise install "opentofu@${OPENTOFU_VERSION}" && \
     mise use -g --pin "opentofu@${OPENTOFU_VERSION}"
 
 # Caveman ≥1.8.0 native opencode plugin needs repoRoot (a local clone);
