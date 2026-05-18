@@ -11,22 +11,18 @@ on:
 
 jobs:
   publish:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-    uses: docker/github-builder/.github/workflows/build.yml@5840c33ab36c6ca11100edbe78f02b178309ff4e
-    with:
-      output: image
-      sign: true
-      sbom: true
-      push: true
-      platforms: linux/amd64,linux/arm64
-      meta-images: docker.io/projectjackin/jackin-the-architect
-      meta-tags: |
-        type=raw,value=latest
-        type=sha,prefix=
-    secrets:
-      registry-auths: |
-        - registry: https://index.docker.io/v1/
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: jackin-project/jackin-role-action@66de3e5c5165e708ab6b09c9496459a662b4b63c # latest
+        with:
+          jackin-version: latest-build
+          push: 'true'
+          image: docker.io/projectjackin/jackin-the-architect
+          registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          registry-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          sign: 'true'
