@@ -14,6 +14,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: jackin-project/jackin-role-action@39c4e098c7d8f976b355803c7021dccb5c091798 # latest
+      - uses: jackin-project/jackin-role-action@b01e117d34c920c340d64554ad892a4415f5882f # latest
         with:
           jackin-version: latest-build
