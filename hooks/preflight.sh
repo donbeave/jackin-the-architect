@@ -50,7 +50,7 @@ register_caveman_shrink() {
 }
 
 verify_codex_caveman_skills() {
-    if [ -f "${HOME}/.agents/skills/caveman/SKILL.md" ]; then
+    if [[ -f "${HOME}/.agents/skills/caveman/SKILL.md" ]]; then
         log "codex caveman skills present in ${HOME}/.agents/skills"
         return 0
     fi
