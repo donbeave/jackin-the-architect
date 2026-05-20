@@ -14,17 +14,16 @@ ARG JUST_VERSION=1.50.0
 ARG OPENTOFU_VERSION=1.11.6
 ARG CAVEMAN_VERSION=1.8.2
 
-RUN sudo apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends \
     build-essential \
     libssl-dev \
     openssl \
     pkg-config \
     cmake && \
-    sudo apt-get autoremove -y && \
-    sudo rm -rf /var/lib/apt/* \
-               /var/cache/apt/* \
-               /tmp/*
+    sudo apt-get autoremove -y
 
 USER agent
 
