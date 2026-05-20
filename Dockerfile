@@ -12,6 +12,7 @@ LABEL jackin.construct_version=${CONSTRUCT_VERSION}
 # never a raw commit SHA. The `skills` CLI's shallow git-clone fetch
 # resolves tags but not arbitrary SHAs.
 ARG RUST_VERSION=1.95.0
+ARG CARGO_BINSTALL_VERSION=1.19.1
 ARG NODE_VERSION=24.15.0
 ARG BUN_VERSION=1.3.13
 ARG JUST_VERSION=1.50.0
@@ -36,17 +37,26 @@ ENV MISE_TRUSTED_CONFIG_PATHS=/workspace
 
 # Per-tool RUNs are deliberate: bumping one ARG only invalidates that
 # tool's layer. Trips hadolint DL3059; the cache reuse is worth it.
-#
-# Rust dev tools share the Rust RUN — rustup components and the
-# cargo-installed binaries are toolchain-specific. `. ~/.profile`
-# activates mise so `rustup` and `cargo` resolve via its shims.
 RUN --mount=type=secret,id=github_token,uid=1000,required=false \
     GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
     mise install "rust@${RUST_VERSION}" && \
     mise use -g --pin "rust@${RUST_VERSION}" && \
     . ~/.profile && \
-    rustup component add clippy rustfmt rust-analyzer && \
-    cargo install --locked cargo-nextest cargo-watch lychee
+    rustup component add clippy rustfmt rust-analyzer
+
+RUN --mount=type=secret,id=github_token,uid=1000,required=false \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    mise install "cargo-binstall@${CARGO_BINSTALL_VERSION}" && \
+    mise use -g --pin "cargo-binstall@${CARGO_BINSTALL_VERSION}"
+
+# cargo-binstall downloads prebuilt binaries — avoids compiling from source.
+# Cache mounts preserve the crate registry across layer rebuilds on persistent runners.
+RUN --mount=type=secret,id=github_token,uid=1000,required=false \
+    --mount=type=cache,target=/home/agent/.cargo/registry,uid=1000 \
+    --mount=type=cache,target=/home/agent/.cargo/git,uid=1000 \
+    GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
+    . ~/.profile && \
+    cargo binstall --no-confirm cargo-nextest cargo-watch lychee
 
 RUN --mount=type=secret,id=github_token,uid=1000,required=false \
     GITHUB_TOKEN=$(cat /run/secrets/github_token 2>/dev/null || true) \
