@@ -13,7 +13,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG RUST_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "rust-lang/rust",
@@ -21,7 +23,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG CARGO_BINSTALL_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "cargo-bins/cargo-binstall",
@@ -30,14 +34,18 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG NODE_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "node-version",
       "packageNameTemplate": "node"
     },
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG BUN_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "oven-sh/bun",
@@ -46,7 +54,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG JUST_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "casey/just",
@@ -54,7 +64,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG OPENTOFU_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "opentofu/opentofu",
@@ -63,7 +75,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["(^|/)Dockerfile$"],
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/"
+      ],
       "matchStrings": ["ARG CAVEMAN_VERSION=(?<currentValue>[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "packageNameTemplate": "JuliusBrussee/caveman",
